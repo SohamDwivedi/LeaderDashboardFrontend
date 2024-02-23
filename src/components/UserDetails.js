@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import UserDetailModal from './UserDetailModal';
 import Modal from 'react-modal';
+import { ClipLoader } from 'react-spinners';
 const UserDetails = () => {
     const [users, setUsers] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
     const [modalIsOpen, setModalIsOpen] = useState(false);
-
+    const [isLoading, setIsLoading] = useState(false);
 
     const [modalAddIsOpen, setModalAddIsOpen] = useState(false);
     const [newUserName, setNewUserName] = useState('');
@@ -19,6 +20,7 @@ const UserDetails = () => {
     const [sortByPoints, setSortByPoints] = useState(null);
 
     useEffect(() => {
+        setIsLoading(true);
         axios.get('http://localhost:8000/api/users') // Assuming your Laravel API is running on port 8000
             .then(response => {
                 const sortedUsers = response.data.sort((a, b) => b.points - a.points);
@@ -26,7 +28,10 @@ const UserDetails = () => {
             })
             .catch(error => {
                 console.error('Error fetching user details:', error);
+            }).finally(() => {
+                setIsLoading(false);
             });
+        setIsLoading(true);
         axios.get('http://localhost:8000/api/users-grouped-by-score') // Assuming your Laravel API is running on port 8000
             .then(response => {
                 // const sortedUsers = response.data.sort((a, b) => b.points - a.points);
@@ -35,10 +40,13 @@ const UserDetails = () => {
             })
             .catch(error => {
                 console.error('Error fetching user details:', error);
+            }).finally(() => {
+                setIsLoading(false);
             });
     }, []);
 
     const handlePlus = (id) => {
+        setIsLoading(true);
         axios.put(`http://localhost:8000/api/users/${id}/increment`)
             .then(response => {
                 const updatedUsers = users.map(user => {
@@ -52,10 +60,13 @@ const UserDetails = () => {
             })
             .catch(error => {
                 console.error('Error incrementing points:', error);
+            }).finally(() => {
+                setIsLoading(false);
             });
     };
     
     const handleMinus = (id) => {
+        setIsLoading(true);
         axios.put(`http://localhost:8000/api/users/${id}/decrement`)
             .then(response => {
                 const updatedUsers = users.map(user => {
@@ -69,11 +80,14 @@ const UserDetails = () => {
             })
             .catch(error => {
                 console.error('Error decrementing points:', error);
+            }).finally(() => {
+                setIsLoading(false);
             });
     };
     
 
     const handleDelete = (id) => {
+        setIsLoading(true);
         axios.delete(`http://localhost:8000/api/users/${id}`)
             .then(() => {
                 const updatedUsers = users.filter(user => user.id !== id);
@@ -82,6 +96,8 @@ const UserDetails = () => {
             })
             .catch(error => {
                 console.error('Error deleting user:', error);
+            }).finally(() => {
+                setIsLoading(false);
             });
     };
     
@@ -102,7 +118,7 @@ const UserDetails = () => {
             points: newUserPoints,
             address: newUserAddress,
         };
-
+        setIsLoading(true);
         axios.post('http://localhost:8000/api/users', newUser)
             .then(response => {
                 const updatedUsers = [...users, response.data];
@@ -112,6 +128,8 @@ const UserDetails = () => {
             })
             .catch(error => {
                 console.error('Error adding user:', error);
+            }).finally(() => {
+                setIsLoading(false);
             });
     };
 
@@ -168,7 +186,11 @@ const UserDetails = () => {
     });
 
     return (
-        <div>
+        <>{isLoading ? (<div className="loader">
+            <ClipLoader color="#000" loading={isLoading} size={50} />
+        </div>)
+        :
+        (<div>
             <h3>Leader Board</h3>
             <input type="text" placeholder="Search by name..." value={searchTerm} onChange={handleSearch} />
             <table>
@@ -204,6 +226,7 @@ const UserDetails = () => {
                     </li>
                 ))}
             </ul> */}
+            <br/>
             <button onClick={openAddModal}><i className="fas fa-plus"/> Add User</button>
             {modalIsOpen && <UserDetailModal user={selectedUser} isOpen={modalIsOpen} onClose={closeModal} />}
 
@@ -223,7 +246,8 @@ const UserDetails = () => {
                 <button onClick={handleAddUser}>Submit</button>
                 <button onClick={closeAddModal}>Close</button>
             </Modal>}
-        </div>
+        </div>)
+        }</>
     );
 };
 
